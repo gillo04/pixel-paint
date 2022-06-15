@@ -33,6 +33,9 @@ const STATE = {
         "colorArray": [],
     },
 }
+let canvas;
+let ctx;
+let previosPos = [-1, -1];
 
 
 function Canvas_Cursor_XY(e)
@@ -787,19 +790,125 @@ function Add_EventHandlers_To_Document()
     })
 }
 
+function InitCanvas()
+{
+    // Get canvas and canvas context
+    canvas = document.getElementById("canvas");
+    ctx = canvas.getContext("2d");
+
+    // Fill the canvas with the initial color
+    ctx.fillStyle = CANVAS_INIT_COLOR;
+    ctx.fillRect(0, 0, CELLS_PER_ROW*CELL_WIDTH_PX, CELLS_PER_ROW*CELL_WIDTH_PX);
+
+    // Add event handlers
+    canvas.addEventListener("mousedown", function(e){
+        canvas.addEventListener("mousemove", mouseMove);
+    });
+
+    canvas.addEventListener("mouseup", function(e){
+        canvas.removeEventListener("mousemove", mouseMove);
+    });
+
+    function mouseMove(e){
+        let relX = parseInt((e.clientX - canvas.getBoundingClientRect().left) / CELL_WIDTH_PX);
+        let relY = parseInt((e.clientY - canvas.getBoundingClientRect().top) / CELL_WIDTH_PX);
+
+        //console.log(relX + " " + relY);
+        if (previosPos[0] != -1){
+            drawLine(previosPos[0], previosPos[1], relX, relY);
+        }
+        
+        // ctx.fillStyle = STATE.activeColor;
+        // ctx.fillRect(relX * CELL_WIDTH_PX, relY * CELL_WIDTH_PX, CELL_WIDTH_PX, CELL_WIDTH_PX);
+        previosPos = [relX, relY];
+    }
+}
+
+function drawLine(x1, y1, x2, y2) // Code stolen from https://jstutorial.medium.com/
+{
+    ctx.fillStyle = STATE.activeColor;
+    let x, y, dx, dy, dx1, dy1, px, py, xe, ye, i;
+    // Calculate line deltas
+    dx = x2 - x1;
+    dy = y2 - y1;
+    // Create a positive copy of deltas (makes iterating easier)
+    dx1 = Math.abs(dx);
+    dy1 = Math.abs(dy);
+    // Calculate error intervals for both axis
+    px = 2 * dy1 - dx1;
+    py = 2 * dx1 - dy1;
+    // The line is X-axis dominant
+    if (dy1 <= dx1) {
+        // Line is drawn left to right
+        if (dx >= 0) {
+            x = x1; y = y1; xe = x2;
+        } else { // Line is drawn right to left (swap ends)
+            x = x2; y = y2; xe = x1;
+        }
+        ctx.fillRect(x * CELL_WIDTH_PX, y * CELL_WIDTH_PX, CELL_WIDTH_PX, CELL_WIDTH_PX);
+        // Rasterize the line
+        for (i = 0; x < xe; i++) {
+            x = x + 1;
+            // Deal with octants...
+            if (px < 0) {
+                px = px + 2 * dy1;
+            } else {
+                if ((dx < 0 && dy < 0) || (dx > 0 && dy > 0)) {
+                    y = y + 1;
+                } else {
+                    y = y - 1;
+                }
+                px = px + 2 * (dy1 - dx1);
+            }
+            // Draw pixel from line span at
+            // currently rasterized position
+            ctx.fillRect(x * CELL_WIDTH_PX, y * CELL_WIDTH_PX, CELL_WIDTH_PX, CELL_WIDTH_PX);
+        }
+    } else { // The line is Y-axis dominant
+        // Line is drawn bottom to top
+        if (dy >= 0) {
+            x = x1; y = y1; ye = y2;
+        } else { // Line is drawn top to bottom
+            x = x2; y = y2; ye = y1;
+        }
+        ctx.fillRect(x * CELL_WIDTH_PX, y * CELL_WIDTH_PX, CELL_WIDTH_PX, CELL_WIDTH_PX);
+        // Rasterize the line
+        for (i = 0; y < ye; i++) {
+            y = y + 1;
+            // Deal with octants...
+            if (py <= 0) {
+                py = py + 2 * dx1;
+            } else {
+                if ((dx < 0 && dy<0) || (dx > 0 && dy > 0)) {
+                    x = x + 1;
+                } else {
+                    x = x - 1;
+                }
+                py = py + 2 * (dx1 - dy1);
+            }
+            // Draw pixel from line span at
+            // currently rasterized position
+            ctx.fillRect(x * CELL_WIDTH_PX, y * CELL_WIDTH_PX, CELL_WIDTH_PX, CELL_WIDTH_PX);
+        }
+    }
+}
+
 Color_All_Toolbar_Buttons();
 Update_Active_Color_Preview();
-Populate_Canvas_With_Cells();
+// Populate_Canvas_With_Cells();
 Populate_Palette_With_Cells();
 Add_Ids_To_Palette_Cells();
 Update_Tooltip_Text();
 Activate_Tool("pencil");
 
-Add_EventHandlers_To_Canvas_Cells();
-Add_EventHandlers_To_Canvas_Div();
+// Add_EventHandlers_To_Canvas_Cells();
+// Add_EventHandlers_To_Canvas_Div();
 Add_EventHandlers_To_Document();
 Add_EventHandlers_To_Palette_Cells();
 Add_EventHandlers_To_Save_Button();
 Add_EventHandlers_To_Toolbar_Buttons();
+
+// Canvas initialization
+InitCanvas();
 
 const HISTORY_STATES = new History_States(MAX_UNDOS);

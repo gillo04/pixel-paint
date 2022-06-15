@@ -78,7 +78,7 @@ function Color_All_Toolbar_Buttons()
     })
 }
 
-function Populate_Canvas_With_Cells()
+/*function Populate_Canvas_With_Cells()
 {
     const canvasDiv = document.getElementById("canvas-div");
     for(let i=0; i<CELLS_PER_ROW*CELLS_PER_ROW; i+=1)
@@ -91,7 +91,7 @@ function Populate_Canvas_With_Cells()
 
         canvasDiv.appendChild(div);
     }
-}
+}*/
 
 function Populate_Palette_With_Cells()
 {
