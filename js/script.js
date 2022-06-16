@@ -156,7 +156,6 @@ function Add_EventHandlers_To_Palette_Cells()
         // click palette to change color
         cell.addEventListener("click", function(e){
             STATE["activeColor"] = e.target.id.split("palette-cell-")[1];
-            console.log(STATE["activeColor"]);
             Update_Active_Color_Preview();
             Update_Active_Color_Label();
         })
@@ -841,7 +840,9 @@ function InitCanvas()
                 break;
 
             case "colorpicker":
-                
+                STATE.activeColor = pixels[relY][relX];
+                Update_Active_Color_Preview();
+                Update_Active_Color_Label();
                 break;
             case "selection":
                 
