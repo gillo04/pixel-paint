@@ -9,7 +9,7 @@ const BUTTON_DOWN_COLOR = "#f0f0f0";
 const BUTTON_DOWN_OUTLINE = "1px solid blue";
 const CANVAS_INIT_COLOR = palette_color_array[0];
 const STATE = {
-    "activeColor": palette_color_array[palette_color_array.length - 1],
+    "activeColor": palette_color_array.length - 1,
     "activeTool": "pencil-button",
     "brushDown": false,
     "grid": {
@@ -36,6 +36,7 @@ const STATE = {
 let canvas;
 let ctx;
 let previosPos = [-1, -1];
+let pixels = [];
 
 
 function Canvas_Cursor_XY(e)
@@ -125,7 +126,7 @@ function Add_Ids_To_Palette_Cells()
 function Update_Active_Color_Preview()
 {
     let activeColorDiv = document.getElementById("active-color-preview");
-    activeColorDiv.style.backgroundColor = STATE["activeColor"];
+    activeColorDiv.style.backgroundColor = palette_color_array[STATE["activeColor"]];
     Update_Active_Color_Label();
 }
 
@@ -143,9 +144,9 @@ function Update_Active_Color_Label()
 {
     activeColorLabel = document.getElementById("active-color-label");
 
-    STATE["activeColor"] = Rgb_To_Hex(STATE["activeColor"]);
-    activeColorLabel.innerHTML = STATE["activeColor"];    // label
-    activeColorLabel.style.color = STATE["activeColor"];  // text color
+    //STATE["activeColor"] = Rgb_To_Hex(palette_color_array[STATE["activeColor"]]);
+    activeColorLabel.innerHTML = palette_color_array[STATE["activeColor"]];    // label
+    activeColorLabel.style.color = palette_color_array[STATE["activeColor"]];  // text color
 }
 
 function Add_EventHandlers_To_Palette_Cells()
@@ -154,7 +155,8 @@ function Add_EventHandlers_To_Palette_Cells()
     allPaletteCells.forEach(function(cell){
         // click palette to change color
         cell.addEventListener("click", function(e){
-            STATE["activeColor"] = e.target.style.backgroundColor;
+            STATE["activeColor"] = e.target.id.split("palette-cell-")[1];
+            console.log(STATE["activeColor"]);
             Update_Active_Color_Preview();
             Update_Active_Color_Label();
         })
@@ -509,14 +511,14 @@ function Add_EventHandlers_To_Canvas_Cells()
         else
         if(cursor.includes("colorpicker.png"))
         {
-            STATE["activeColor"] = e.target.style.backgroundColor;
+            STATE["activeColor"] = e.target.id;
             Update_Active_Color_Preview();
             Update_Active_Color_Label();
         }
         else
         if(cursor.includes("pencil.png"))
         {
-            e.target.style.backgroundColor = STATE["activeColor"];
+            e.target.style.backgroundColor = palette_color_array[STATE["activeColor"]];
         }
     }
 
@@ -539,7 +541,7 @@ function Add_EventHandlers_To_Canvas_Cells()
             {
                 let cell_id = e.target.id;
                 let target_color = e.target.style.backgroundColor;
-                let replacement_color = STATE["activeColor"];
+                let replacement_color = palette_color_array[STATE["activeColor"]];
 
                 Flood_Fill_Algorithm(cell_id,
                                      target_color,
@@ -565,24 +567,18 @@ function Unlock_Selection()
 function Toggle_Grid(e)
 {
     const gridButton = document.getElementById("grid-button");
-    const canvasCells = document.querySelectorAll(".canvasCell");
 
     if(STATE["grid"]["isToggled"] === false)
     {
         Color_Toolbar_Button_As_Down(gridButton);
-        canvasCells.forEach(function(cell) {
-            cell.style.outline = GRID_OUTLINE_CSS;
-        })
         STATE["grid"]["isToggled"] = true;
     }
     else
     {
         Color_Toolbar_Button_When_Up(gridButton);
-        canvasCells.forEach(function(cell) {
-            cell.style.outline = "";
-        })
         STATE["grid"]["isToggled"] = false;
     }
+    draw();
 }
 
 function Add_EventHandlers_To_Toolbar_Buttons()
@@ -796,16 +792,27 @@ function InitCanvas()
     canvas = document.getElementById("canvas");
     ctx = canvas.getContext("2d");
 
-    // Fill the canvas with the initial color
-    ctx.fillStyle = CANVAS_INIT_COLOR;
-    ctx.fillRect(0, 0, CELLS_PER_ROW*CELL_WIDTH_PX, CELLS_PER_ROW*CELL_WIDTH_PX);
+    // Fill the pixel array
+    for (let i = 0; i < CELLS_PER_ROW; i++) {
+        pixels[i] = [];
+        for (let j = 0; j < CELLS_PER_ROW; j++) {
+            pixels[i][j] = 0;
+        }
+    }
+
+    // Draw the canvas
+    draw();
 
     // Add event handlers
     canvas.addEventListener("mousedown", function(e){
+        previosPos = [-1, -1];
+        STATE.brushDown = true;
+        mouseMove(e);
         canvas.addEventListener("mousemove", mouseMove);
     });
 
     canvas.addEventListener("mouseup", function(e){
+        STATE.brushDown = false;
         canvas.removeEventListener("mousemove", mouseMove);
     });
 
@@ -813,20 +820,37 @@ function InitCanvas()
         let relX = parseInt((e.clientX - canvas.getBoundingClientRect().left) / CELL_WIDTH_PX);
         let relY = parseInt((e.clientY - canvas.getBoundingClientRect().top) / CELL_WIDTH_PX);
 
-        //console.log(relX + " " + relY);
-        if (previosPos[0] != -1){
-            drawLine(previosPos[0], previosPos[1], relX, relY);
+        switch (STATE.activeTool) {
+            case "pencil":
+                if (previosPos[0] != -1){
+                    drawLine(previosPos[0], previosPos[1], relX, relY);
+                } else {
+                    pixels[relY][relX] = STATE.activeColor;
+                }
+                break;
+
+            case "fill":
+                
+                break;
+            case "eraser":
+                
+                break;
+
+            case "colorpicker":
+                
+                break;
+            case "selection":
+                
+                break;
         }
         
-        // ctx.fillStyle = STATE.activeColor;
-        // ctx.fillRect(relX * CELL_WIDTH_PX, relY * CELL_WIDTH_PX, CELL_WIDTH_PX, CELL_WIDTH_PX);
         previosPos = [relX, relY];
+        draw();
     }
 }
 
 function drawLine(x1, y1, x2, y2) // Code stolen from https://jstutorial.medium.com/
 {
-    ctx.fillStyle = STATE.activeColor;
     let x, y, dx, dy, dx1, dy1, px, py, xe, ye, i;
     // Calculate line deltas
     dx = x2 - x1;
@@ -845,7 +869,7 @@ function drawLine(x1, y1, x2, y2) // Code stolen from https://jstutorial.medium.
         } else { // Line is drawn right to left (swap ends)
             x = x2; y = y2; xe = x1;
         }
-        ctx.fillRect(x * CELL_WIDTH_PX, y * CELL_WIDTH_PX, CELL_WIDTH_PX, CELL_WIDTH_PX);
+        pixels[y][x] = STATE.activeColor;
         // Rasterize the line
         for (i = 0; x < xe; i++) {
             x = x + 1;
@@ -862,7 +886,7 @@ function drawLine(x1, y1, x2, y2) // Code stolen from https://jstutorial.medium.
             }
             // Draw pixel from line span at
             // currently rasterized position
-            ctx.fillRect(x * CELL_WIDTH_PX, y * CELL_WIDTH_PX, CELL_WIDTH_PX, CELL_WIDTH_PX);
+            pixels[y][x] = STATE.activeColor;
         }
     } else { // The line is Y-axis dominant
         // Line is drawn bottom to top
@@ -871,7 +895,7 @@ function drawLine(x1, y1, x2, y2) // Code stolen from https://jstutorial.medium.
         } else { // Line is drawn top to bottom
             x = x2; y = y2; ye = y1;
         }
-        ctx.fillRect(x * CELL_WIDTH_PX, y * CELL_WIDTH_PX, CELL_WIDTH_PX, CELL_WIDTH_PX);
+        pixels[y][x] = STATE.activeColor;
         // Rasterize the line
         for (i = 0; y < ye; i++) {
             y = y + 1;
@@ -888,7 +912,22 @@ function drawLine(x1, y1, x2, y2) // Code stolen from https://jstutorial.medium.
             }
             // Draw pixel from line span at
             // currently rasterized position
-            ctx.fillRect(x * CELL_WIDTH_PX, y * CELL_WIDTH_PX, CELL_WIDTH_PX, CELL_WIDTH_PX);
+            pixels[y][x] = STATE.activeColor;
+        }
+    }
+}
+
+function draw(){
+    for (let i = 0; i < CELLS_PER_ROW; i++) {
+        for (let j = 0; j < CELLS_PER_ROW; j++) {
+            ctx.beginPath();
+            ctx.fillStyle = palette_color_array[pixels[i][j]];
+            ctx.strokeStyle = "#000";
+            ctx.rect(j * CELL_WIDTH_PX, i * CELL_WIDTH_PX, CELL_WIDTH_PX, CELL_WIDTH_PX);
+            if (STATE.grid.isToggled) {
+                ctx.stroke();
+            }
+            ctx.fill();
         }
     }
 }
