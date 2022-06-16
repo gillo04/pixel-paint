@@ -7,7 +7,7 @@ const BUTTON_UP_COLOR = "#a0a0a0";
 const BUTTON_UP_OUTLINE = "";
 const BUTTON_DOWN_COLOR = "#f0f0f0";
 const BUTTON_DOWN_OUTLINE = "1px solid blue";
-const CANVAS_INIT_COLOR = palette_color_array[0];
+const CANVAS_INIT_COLOR = 0;
 const STATE = {
     "activeColor": palette_color_array.length - 1,
     "activeTool": "pencil-button",
@@ -796,7 +796,7 @@ function InitCanvas()
     for (let i = 0; i < CELLS_PER_ROW; i++) {
         pixels[i] = [];
         for (let j = 0; j < CELLS_PER_ROW; j++) {
-            pixels[i][j] = 0;
+            pixels[i][j] = CANVAS_INIT_COLOR;
         }
     }
 
@@ -823,7 +823,7 @@ function InitCanvas()
         switch (STATE.activeTool) {
             case "pencil":
                 if (previosPos[0] != -1){
-                    drawLine(previosPos[0], previosPos[1], relX, relY);
+                    drawLine(previosPos[0], previosPos[1], relX, relY, STATE.activeColor);
                 } else {
                     pixels[relY][relX] = STATE.activeColor;
                 }
@@ -833,7 +833,11 @@ function InitCanvas()
                 floodFill(relX, relY, STATE.activeColor, pixels[relY][relX]);
                 break;
             case "eraser":
-                
+                if (previosPos[0] != -1){
+                    drawLine(previosPos[0], previosPos[1], relX, relY, CANVAS_INIT_COLOR);
+                } else {
+                    pixels[relY][relX] = CANVAS_INIT_COLOR;
+                }
                 break;
 
             case "colorpicker":
@@ -849,7 +853,7 @@ function InitCanvas()
     }
 }
 
-function drawLine(x1, y1, x2, y2) // Code stolen from https://jstutorial.medium.com/
+function drawLine(x1, y1, x2, y2, color) // Code stolen from https://jstutorial.medium.com/
 {
     let x, y, dx, dy, dx1, dy1, px, py, xe, ye, i;
     // Calculate line deltas
@@ -869,7 +873,7 @@ function drawLine(x1, y1, x2, y2) // Code stolen from https://jstutorial.medium.
         } else { // Line is drawn right to left (swap ends)
             x = x2; y = y2; xe = x1;
         }
-        pixels[y][x] = STATE.activeColor;
+        pixels[y][x] = color;
         // Rasterize the line
         for (i = 0; x < xe; i++) {
             x = x + 1;
@@ -886,7 +890,7 @@ function drawLine(x1, y1, x2, y2) // Code stolen from https://jstutorial.medium.
             }
             // Draw pixel from line span at
             // currently rasterized position
-            pixels[y][x] = STATE.activeColor;
+            pixels[y][x] = color;
         }
     } else { // The line is Y-axis dominant
         // Line is drawn bottom to top
@@ -895,7 +899,7 @@ function drawLine(x1, y1, x2, y2) // Code stolen from https://jstutorial.medium.
         } else { // Line is drawn top to bottom
             x = x2; y = y2; ye = y1;
         }
-        pixels[y][x] = STATE.activeColor;
+        pixels[y][x] = color;
         // Rasterize the line
         for (i = 0; y < ye; i++) {
             y = y + 1;
@@ -912,7 +916,7 @@ function drawLine(x1, y1, x2, y2) // Code stolen from https://jstutorial.medium.
             }
             // Draw pixel from line span at
             // currently rasterized position
-            pixels[y][x] = STATE.activeColor;
+            pixels[y][x] = color;
         }
     }
 }
