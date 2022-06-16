@@ -830,7 +830,7 @@ function InitCanvas()
                 break;
 
             case "fill":
-                
+                floodFill(relX, relY, STATE.activeColor, pixels[relY][relX]);
                 break;
             case "eraser":
                 
@@ -915,6 +915,24 @@ function drawLine(x1, y1, x2, y2) // Code stolen from https://jstutorial.medium.
             pixels[y][x] = STATE.activeColor;
         }
     }
+}
+
+function floodFill(x, y, color, prevColor){
+    // Base cases
+    if (x < 0 || x >= CELLS_PER_ROW || y < 0 || y >= CELLS_PER_ROW){
+        return;
+    }
+
+    if (pixels[y][x] != prevColor || pixels[y][x] == color){
+        return;
+    }
+
+    // Recursive calls
+    pixels[y][x] = color;
+    floodFill(x-1, y, color, prevColor);
+    floodFill(x, y-1, color, prevColor);
+    floodFill(x+1, y, color, prevColor);
+    floodFill(x, y+1, color, prevColor);
 }
 
 function draw(){
